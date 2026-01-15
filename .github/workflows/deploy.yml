@@ -1,13 +1,12 @@
-name: Deploy to Azure Storage Static Website
+name: Deploy Static Web App
 
 on:
   push:
     branches: ["main"]
 
 jobs:
-  build-and-deploy:
+  build_and_deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -15,17 +14,19 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "npm"
+          node-version: 20
 
-      - name: Install dependencies
+      - name: Install
         run: npm ci
 
       - name: Build
         run: npm run build
 
-      - name: Upload to Azure Storage ($web)
-        run: |
-          azcopy copy "dist/*" \
-          "https://${{ secrets.AZURE_STORAGE_ACCOUNT }}.blob.core.windows.net/\$web?${{ secrets.AZURE_STORAGE_SAS }}" \
-          --recursive=true
+      - name: Deploy
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          app_location: "/"
+          output_location: "dist"
