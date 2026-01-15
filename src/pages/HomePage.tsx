@@ -103,7 +103,8 @@ function useContentSections() {
 }
 
 /**
- * Used to disable expensive animations + filters on mobile.
+ * True on most phones/tablets (touch / coarse pointer).
+ * We use this to disable expensive animations + filters on mobile.
  */
 function useIsCoarsePointer() {
   const [isCoarse, setIsCoarse] = useState(false);
@@ -136,12 +137,13 @@ function GradientBackground() {
         `,
         backgroundSize: "220% 220%",
         backgroundRepeat: "no-repeat",
+        // ✅ huge perf win on mobile
         filter: isCoarse ? "none" : "blur(8px)",
       }}
       initial={{ opacity: 0, backgroundPosition: "50% 40%" }}
       animate={
         isCoarse
-          ? { opacity: 1, backgroundPosition: "50% 40%" }
+          ? { opacity: 1, backgroundPosition: "50% 40%" } // ✅ no moving gradient on mobile
           : {
               opacity: 1,
               backgroundPosition: [
@@ -199,9 +201,10 @@ export default function HomePage() {
       : FEATURED_ITEMS_FALLBACK;
 
   return (
-    <main className="font-sans relative min-h-screen bg-[#0f172a] text-[#f8fafc]">
+    <main className="font-sans relative min-h-screen bg-[#0f172a] text-[#f8fafc] overflow-x-hidden">
       <GradientBackground />
       <Header />
+
       {/* Hero + Featured */}
       <section className="relative overflow-hidden">
         <div className="relative z-10">
@@ -209,8 +212,10 @@ export default function HomePage() {
           <FeaturedCarousel items={featuredItems} />
         </div>
       </section>
+
       {/* CKCU radio */}
       <CKCU />
+
       {/* Archive + Contact + Footer */}
       <section className="relative overflow-hidden">
         {/* static gradient backdrop */}
@@ -228,7 +233,6 @@ export default function HomePage() {
             `,
             backgroundSize: "220% 200%",
             backgroundRepeat: "no-repeat",
-            // ✅ cheaper on mobile
             filter: "blur(8px)",
             opacity: 0.95,
           }}
@@ -249,15 +253,16 @@ function Header() {
   return (
     <header
       className="
-        sticky top-0 z-50
+        sticky top-0 left-0 right-0 w-full z-50
         backdrop-blur-md sm:backdrop-blur-xl
         bg-transparent
         supports-[backdrop-filter]:bg-[rgba(233,213,255,0.07)]
         shadow-[0_0_35px_rgba(233,213,255,0.15)]
+        overflow-x-hidden
       "
     >
       <nav className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex justify-center">
-        <div className="inline-flex items-center gap-3">
+        <div className="inline-flex flex-wrap justify-center items-center gap-2 sm:gap-3">
           {[
             { href: "#hero", label: "Home" },
             { href: "#featured", label: "Work" },
@@ -300,22 +305,22 @@ function Hero() {
       <motion.section
         initial={{ opacity: 0, y: -25 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ amount: 0.5, once: true }} // ✅ reduce re-animating on scroll
+        viewport={{ amount: 0.5, once: true }}
         transition={{ duration: 0.6, ease: "easeOut" }}
         className="pb-10 px-4 sm:px-6 lg:px-8"
       >
         <div className="max-w-xl mx-auto flex flex-col items-center text-center gap-3">
           {/* portrait + glow */}
           <div className="relative inline-flex items-center justify-center">
-            <div className="pointer-events-none absolute inset-0 w-[calc(100%+40px)] h-[calc(100%+40px)] bg-white opacity-20 blur-3xl rounded-full -z-10" />
+            <div className="pointer-events-none absolute inset-0 w-[calc(100%+48px)] h-[calc(100%+48px)] bg-white opacity-20 blur-3xl rounded-full -z-10" />
             <img
               src={gibIcon}
               alt="Portrait of Lauren Gibson"
               className="
-                w-24 h-24
-                sm:w-32 sm:h-32
-                md:w-40 md:h-40
-                lg:w-48 lg:h-48
+                w-36 h-36
+                sm:w-40 sm:h-40
+                md:w-48 md:h-48
+                lg:w-56 lg:h-56
                 rounded-full object-cover
                 shadow-xl
                 border border-white/10
@@ -421,7 +426,8 @@ function FeaturedCarousel({ items }: { items: FeaturedItem[] }) {
               {items.map((item) => (
                 <div
                   key={item.title}
-                  className="flex-[0_0_85%] sm:flex-[0_0_60%] md:flex-[0_0_45%] lg:flex-[0_0_33%] px-2 sm:px-3"
+                  // ✅ one full slide on mobile (no clipped peek)
+                  className="flex-[0_0_100%] sm:flex-[0_0_60%] md:flex-[0_0_45%] lg:flex-[0_0_33%] px-0 sm:px-3"
                 >
                   <motion.article
                     whileHover={isCoarse ? undefined : { y: -4, scale: 1.01 }}
@@ -503,7 +509,7 @@ function CKCU() {
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ amount: 0.3, once: true }} // ✅ reduce re-animating on scroll
+          viewport={{ amount: 0.3, once: true }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
           <div className="font-sans inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs sm:text-sm mb-4 sm:backdrop-blur">
@@ -621,7 +627,7 @@ function Archive({ items }: { items: FeaturedItem[] }) {
         </h2>
       </div>
 
-      {/* 1 col on mobile, 2 on small, 3 on large */}
+      {/* 1 col on mobile, 2 on small, 4 on large */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 items-stretch">
         {items.map((item) => (
           <motion.article
