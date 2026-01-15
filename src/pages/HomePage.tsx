@@ -102,7 +102,26 @@ function useContentSections() {
   return { featured, selectedWork, archive, loading };
 }
 
+/**
+ * Used to disable expensive animations + filters on mobile.
+ */
+function useIsCoarsePointer() {
+  const [isCoarse, setIsCoarse] = useState(false);
+
+  useEffect(() => {
+    const m = window.matchMedia("(pointer: coarse)");
+    const update = () => setIsCoarse(m.matches);
+    update();
+    m.addEventListener?.("change", update);
+    return () => m.removeEventListener?.("change", update);
+  }, []);
+
+  return isCoarse;
+}
+
 function GradientBackground() {
+  const isCoarse = useIsCoarsePointer();
+
   return (
     <motion.div
       aria-hidden
@@ -117,30 +136,36 @@ function GradientBackground() {
         `,
         backgroundSize: "220% 220%",
         backgroundRepeat: "no-repeat",
-        filter: "blur(8px)",
+        filter: isCoarse ? "none" : "blur(8px)",
       }}
       initial={{ opacity: 0, backgroundPosition: "50% 40%" }}
-      animate={{
-        opacity: 1,
-        backgroundPosition: [
-          "50% 40%",
-          "55% 35%",
-          "60% 55%",
-          "45% 65%",
-          "40% 45%",
-          "50% 40%",
-          "52% 30%",
-          "50% 40%",
-        ],
-      }}
+      animate={
+        isCoarse
+          ? { opacity: 1, backgroundPosition: "50% 40%" }
+          : {
+              opacity: 1,
+              backgroundPosition: [
+                "50% 40%",
+                "55% 35%",
+                "60% 55%",
+                "45% 65%",
+                "40% 45%",
+                "50% 40%",
+                "52% 30%",
+                "50% 40%",
+              ],
+            }
+      }
       transition={{
-        opacity: { duration: 1.2, ease: "easeOut" },
-        backgroundPosition: {
-          duration: 30,
-          repeat: Infinity,
-          repeatType: "mirror",
-          ease: "easeInOut",
-        },
+        opacity: { duration: 1.0, ease: "easeOut" },
+        backgroundPosition: isCoarse
+          ? undefined
+          : {
+              duration: 30,
+              repeat: Infinity,
+              repeatType: "mirror",
+              ease: "easeInOut",
+            },
       }}
     />
   );
@@ -203,7 +228,8 @@ export default function HomePage() {
             `,
             backgroundSize: "220% 200%",
             backgroundRepeat: "no-repeat",
-            filter: "blur(10px)",
+            // ✅ cheaper on mobile
+            filter: "blur(8px)",
             opacity: 0.95,
           }}
         />
@@ -224,7 +250,7 @@ function Header() {
     <header
       className="
         sticky top-0 z-50
-        backdrop-blur-xl
+        backdrop-blur-md sm:backdrop-blur-xl
         bg-transparent
         supports-[backdrop-filter]:bg-[rgba(233,213,255,0.07)]
         shadow-[0_0_35px_rgba(233,213,255,0.15)]
@@ -274,7 +300,7 @@ function Hero() {
       <motion.section
         initial={{ opacity: 0, y: -25 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ amount: 0.5 }}
+        viewport={{ amount: 0.5, once: true }} // ✅ reduce re-animating on scroll
         transition={{ duration: 0.6, ease: "easeOut" }}
         className="pb-10 px-4 sm:px-6 lg:px-8"
       >
@@ -336,6 +362,8 @@ function Hero() {
 /* ---------------- Featured (Embla autoplay carousel) ---------------- */
 
 function FeaturedCarousel({ items }: { items: FeaturedItem[] }) {
+  const isCoarse = useIsCoarsePointer();
+
   const [emblaRef, emblaApi] = useEmblaCarousel(
     { loop: true, align: "start", skipSnaps: false },
     [Autoplay({ delay: 6000, stopOnInteraction: false })]
@@ -349,7 +377,7 @@ function FeaturedCarousel({ items }: { items: FeaturedItem[] }) {
       id="featured"
       initial={{ opacity: 0, x: -60 }}
       whileInView={{ opacity: 1, x: 0 }}
-      viewport={{ amount: 0.2 }}
+      viewport={{ amount: 0.2, once: true }}
       transition={{ duration: 0.8, ease: "easeOut" }}
       className="max-w-6xl mx-auto px-4 sm:px-6 pb-12 sm:pb-16 pt-6 scroll-mt-24"
     >
@@ -365,7 +393,7 @@ function FeaturedCarousel({ items }: { items: FeaturedItem[] }) {
             onClick={scrollPrev}
             className="
               h-9 w-9 flex items-center justify-center rounded-full
-              bg-white/10 backdrop-blur border border-white/20
+              bg-white/10 sm:backdrop-blur border border-white/20
               hover:bg-white/20 transition cursor-pointer
             "
           >
@@ -376,7 +404,7 @@ function FeaturedCarousel({ items }: { items: FeaturedItem[] }) {
             onClick={scrollNext}
             className="
               h-9 w-9 flex items-center justify-center rounded-full
-              bg-white/10 backdrop-blur border border-white/20
+              bg-white/10 sm:backdrop-blur border border-white/20
               hover:bg-white/20 transition cursor-pointer
             "
           >
@@ -396,7 +424,7 @@ function FeaturedCarousel({ items }: { items: FeaturedItem[] }) {
                   className="flex-[0_0_85%] sm:flex-[0_0_60%] md:flex-[0_0_45%] lg:flex-[0_0_33%] px-2 sm:px-3"
                 >
                   <motion.article
-                    whileHover={{ y: -4, scale: 1.01 }}
+                    whileHover={isCoarse ? undefined : { y: -4, scale: 1.01 }}
                     transition={{ type: "spring", stiffness: 260, damping: 18 }}
                     className="h-full bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col"
                   >
@@ -406,6 +434,7 @@ function FeaturedCarousel({ items }: { items: FeaturedItem[] }) {
                           <img
                             src={item.imageUrl}
                             alt={item.title}
+                            loading="lazy"
                             className="w-full h-full object-cover"
                           />
                         </div>
@@ -474,10 +503,10 @@ function CKCU() {
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ amount: 0.3 }}
+          viewport={{ amount: 0.3, once: true }} // ✅ reduce re-animating on scroll
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
-          <div className="font-sans inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs sm:text-sm mb-4 backdrop-blur">
+          <div className="font-sans inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs sm:text-sm mb-4 sm:backdrop-blur">
             <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
             <span>On Air · CKCU FM 93.1</span>
           </div>
@@ -575,12 +604,14 @@ function CKCU() {
 /* ---------------- Archive / Contact / Footer ---------------- */
 
 function Archive({ items }: { items: FeaturedItem[] }) {
+  const isCoarse = useIsCoarsePointer();
+
   return (
     <motion.section
       id="archive"
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ amount: 0.2 }}
+      viewport={{ amount: 0.2, once: true }}
       transition={{ duration: 0.6, ease: "easeOut" }}
       className="max-w-5xl mx-auto px-4 sm:px-6 pt-10 pb-8 sm:pt-12 sm:pb-10 scroll-mt-24"
     >
@@ -595,40 +626,44 @@ function Archive({ items }: { items: FeaturedItem[] }) {
         {items.map((item) => (
           <motion.article
             key={item.title}
-            className="relative h-full group [perspective:1200px]"
-            whileHover={{ y: -10, rotateX: 3, rotateY: -3, scale: 1.02 }}
+            className="relative h-full group sm:[perspective:1200px]"
+            whileHover={
+              isCoarse
+                ? undefined
+                : { y: -10, rotateX: 3, rotateY: -3, scale: 1.02 }
+            }
             transition={{ type: "spring", stiffness: 240, damping: 16 }}
           >
             {/* Glow aura behind card */}
             <div
               className="
-      absolute -inset-1 rounded-3xl opacity-25 blur-md pointer-events-none
-      bg-gradient-to-r from-indigo-200 via-purple-200 to-pink-200
-      transition-all duration-300
-      group-hover:opacity-60 group-hover:blur-lg
-    "
+                absolute -inset-1 rounded-3xl opacity-25 blur-md pointer-events-none
+                bg-gradient-to-r from-indigo-200 via-purple-200 to-pink-200
+                transition-all duration-300
+                sm:group-hover:opacity-60 sm:group-hover:blur-lg
+              "
             />
 
             {/* Card */}
             <div
               className="
-    relative overflow-hidden rounded-2xl border border-white/15
-    bg-white/80 shadow-sm flex flex-col h-full
-    min-h-[420px] sm:min-h-[460px] lg:min-h-[500px]
-    transition-all duration-300
-    group-hover:shadow-[0_20px_70px_rgba(15,23,42,0.25)]
-    [transform-style:preserve-3d]
-  "
+                relative overflow-hidden rounded-2xl border border-white/15
+                bg-white/80 shadow-sm flex flex-col h-full
+                min-h-[420px] sm:min-h-[460px] lg:min-h-[500px]
+                transition-all duration-300
+                sm:group-hover:shadow-[0_20px_70px_rgba(15,23,42,0.25)]
+                [transform-style:preserve-3d]
+              "
             >
-              {/* Shimmer sweep */}
+              {/* Shimmer sweep (desktop only) */}
               <div
                 className="
-        pointer-events-none absolute inset-0 opacity-0
-        bg-[linear-gradient(110deg,transparent,rgba(255,255,255,0.45),transparent)]
-        translate-x-[-120%]
-        group-hover:opacity-100 group-hover:translate-x-[120%]
-        transition-all duration-700
-      "
+                  pointer-events-none absolute inset-0 opacity-0
+                  bg-[linear-gradient(110deg,transparent,rgba(255,255,255,0.45),transparent)]
+                  translate-x-[-120%]
+                  sm:group-hover:opacity-100 sm:group-hover:translate-x-[120%]
+                  transition-all duration-700
+                "
               />
 
               {/* Image flush top */}
@@ -643,13 +678,14 @@ function Archive({ items }: { items: FeaturedItem[] }) {
                     <img
                       src={item.imageUrl}
                       alt={item.title}
+                      loading="lazy"
                       className="
-    w-full
-    h-40 sm:h-48 md:h-56
-    object-cover
-    transition-transform duration-700 ease-out
-    group-hover:scale-[1.12]
-  "
+                        w-full
+                        h-40 sm:h-48 md:h-56
+                        object-cover
+                        transition-transform duration-700 ease-out
+                        sm:group-hover:scale-[1.12]
+                      "
                     />
                   </div>
                 </a>
@@ -663,10 +699,10 @@ function Archive({ items }: { items: FeaturedItem[] }) {
               <div className="p-4 sm:p-5 flex flex-col flex-1">
                 <h3
                   className="
-          font-display text-lg sm:text-xl font-semibold text-gray-900 line-clamp-2
-          transition-colors duration-300
-          group-hover:text-indigo-700
-        "
+                    font-display text-lg sm:text-xl font-semibold text-gray-900 line-clamp-2
+                    transition-colors duration-300
+                    sm:group-hover:text-indigo-700
+                  "
                 >
                   {item.title}
                 </h3>
@@ -695,7 +731,7 @@ function Contact() {
       id="contact"
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ amount: 0.3 }}
+      viewport={{ amount: 0.3, once: true }}
       transition={{ duration: 0.7, ease: "easeOut" }}
       className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 pb-16 sm:pt-12 sm:pb-20 scroll-mt-24"
     >
