@@ -103,8 +103,7 @@ function useContentSections() {
 }
 
 /**
- * True on most phones/tablets (touch / coarse pointer).
- * We use this to disable expensive animations + filters on mobile.
+ * Used to disable expensive animations + filters on mobile.
  */
 function useIsCoarsePointer() {
   const [isCoarse, setIsCoarse] = useState(false);
@@ -137,13 +136,12 @@ function GradientBackground() {
         `,
         backgroundSize: "220% 220%",
         backgroundRepeat: "no-repeat",
-        // ✅ huge perf win on mobile
-        filter: isCoarse ? "none" : "blur(8px)",
+        filter: isCoarse ? "none" : "blur(4px)",
       }}
       initial={{ opacity: 0, backgroundPosition: "50% 40%" }}
       animate={
         isCoarse
-          ? { opacity: 1, backgroundPosition: "50% 40%" } // ✅ no moving gradient on mobile
+          ? { opacity: 1, backgroundPosition: "50% 40%" }
           : {
               opacity: 1,
               backgroundPosition: [
@@ -201,7 +199,7 @@ export default function HomePage() {
       : FEATURED_ITEMS_FALLBACK;
 
   return (
-    <main className="font-sans relative min-h-screen bg-[#0f172a] text-[#f8fafc] overflow-x-hidden">
+    <main className="font-sans relative min-h-screen bg-[#0f172a] text-[#f8fafc] ">
       <GradientBackground />
       <Header />
 
@@ -370,7 +368,7 @@ function FeaturedCarousel({ items }: { items: FeaturedItem[] }) {
   const isCoarse = useIsCoarsePointer();
 
   const [emblaRef, emblaApi] = useEmblaCarousel(
-    { loop: true, align: "start", skipSnaps: false },
+    { loop: true, align: "center", skipSnaps: false },
     [Autoplay({ delay: 6000, stopOnInteraction: false })]
   );
 
@@ -384,7 +382,7 @@ function FeaturedCarousel({ items }: { items: FeaturedItem[] }) {
       whileInView={{ opacity: 1, x: 0 }}
       viewport={{ amount: 0.2, once: true }}
       transition={{ duration: 0.8, ease: "easeOut" }}
-      className="max-w-6xl mx-auto px-4 sm:px-6 pb-12 sm:pb-16 pt-6 scroll-mt-24"
+      className="max-w-6xl mx-auto px-4 sm:px-6 pb-12 sm:pb-16 pt-6 scroll-mt-24 [transform:translateZ(0)] [will-change:transform]"
     >
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-4 sm:mb-6">
         <div>
@@ -421,21 +419,20 @@ function FeaturedCarousel({ items }: { items: FeaturedItem[] }) {
       <div className="relative">
         <div className="absolute -inset-1 bg-gradient-to-r from-indigo-200 via-purple-200 to-pink-200 rounded-3xl opacity-40 blur-lg pointer-events-none" />
         <div className="relative rounded-3xl bg-white/70 border border-gray-200 py-5 sm:py-6">
-          <div ref={emblaRef} className="overflow-hidden">
+          <div ref={emblaRef} className="overflow-x-hidden overflow-y-visible">
             <div className="flex">
               {items.map((item) => (
                 <div
                   key={item.title}
-                  // ✅ one full slide on mobile (no clipped peek)
-                  className="flex-[0_0_100%] sm:flex-[0_0_60%] md:flex-[0_0_45%] lg:flex-[0_0_33%] px-0 sm:px-3"
+                  className="flex-[0_0_100%] sm:flex-[0_0_60%] md:flex-[0_0_45%] lg:flex-[0_0_33%] px-4 sm:px-3 py-2"
                 >
                   <motion.article
                     whileHover={isCoarse ? undefined : { y: -4, scale: 1.01 }}
                     transition={{ type: "spring", stiffness: 260, damping: 18 }}
                     className="h-full bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col"
                   >
-                    {item.imageUrl && (
-                      <a href={item.url} target="_blank" rel="noreferrer">
+                    <a href={item.url} target="_blank" rel="noreferrer">
+                      {item.imageUrl && (
                         <div className="w-full h-32 sm:h-36 md:h-40 overflow-hidden">
                           <img
                             src={item.imageUrl}
@@ -444,20 +441,20 @@ function FeaturedCarousel({ items }: { items: FeaturedItem[] }) {
                             className="w-full h-full object-cover"
                           />
                         </div>
-                      </a>
-                    )}
+                      )}
 
-                    <div className="p-4 sm:p-5 flex flex-col flex-1">
-                      <p className="font-sans text-xs sm:text-sm font-medium text-indigo-500 mb-1">
-                        {item.outlet} · {item.date}
-                      </p>
-                      <h3 className="font-display text-lg sm:text-xl font-semibold text-[#0F172A]">
-                        {item.title}
-                      </h3>
-                      <p className="mt-2 text-sm sm:text-base text-gray-700 flex-1">
-                        {item.summary}
-                      </p>
-                    </div>
+                      <div className="p-4 sm:p-5 flex flex-col flex-1">
+                        <p className="font-sans text-xs sm:text-sm font-medium text-indigo-500 mb-1">
+                          {item.outlet} · {item.date}
+                        </p>
+                        <h3 className="font-display text-lg sm:text-xl font-semibold text-[#0F172A]">
+                          {item.title}
+                        </h3>
+                        <p className="mt-2 text-sm sm:text-base text-gray-700 flex-1">
+                          {item.summary}
+                        </p>
+                      </div>
+                    </a>
                   </motion.article>
                 </div>
               ))}
@@ -619,7 +616,7 @@ function Archive({ items }: { items: FeaturedItem[] }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ amount: 0.2, once: true }}
       transition={{ duration: 0.6, ease: "easeOut" }}
-      className="max-w-5xl mx-auto px-4 sm:px-6 pt-10 pb-8 sm:pt-12 sm:pb-10 scroll-mt-24"
+      className="max-w-5xl mx-auto px-4 sm:px-6 pt-10 pb-8 sm:pt-12 sm:pb-10 scroll-mt-24 [transform:translateZ(0)] [will-change:transform]"
     >
       <div className="mb-4 sm:mb-6">
         <h2 className="font-display text-2xl sm:text-3xl font-bold text-[#f8fafc]">
@@ -628,7 +625,7 @@ function Archive({ items }: { items: FeaturedItem[] }) {
       </div>
 
       {/* 1 col on mobile, 2 on small, 4 on large */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 items-stretch">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 items-stretch">
         {items.map((item) => (
           <motion.article
             key={item.title}
@@ -650,9 +647,15 @@ function Archive({ items }: { items: FeaturedItem[] }) {
               "
             />
 
-            {/* Card */}
-            <div
-              className="
+            <a
+              href={item.url}
+              target="_blank"
+              rel="noreferrer"
+              className="block"
+            >
+              {/* Card */}
+              <div
+                className="
                 relative overflow-hidden rounded-2xl border border-white/15
                 bg-white/80 shadow-sm flex flex-col h-full
                 min-h-[420px] sm:min-h-[460px] lg:min-h-[500px]
@@ -660,26 +663,20 @@ function Archive({ items }: { items: FeaturedItem[] }) {
                 sm:group-hover:shadow-[0_20px_70px_rgba(15,23,42,0.25)]
                 [transform-style:preserve-3d]
               "
-            >
-              {/* Shimmer sweep (desktop only) */}
-              <div
-                className="
+              >
+                {/* Shimmer sweep (desktop only) */}
+                <div
+                  className="
                   pointer-events-none absolute inset-0 opacity-0
                   bg-[linear-gradient(110deg,transparent,rgba(255,255,255,0.45),transparent)]
                   translate-x-[-120%]
                   sm:group-hover:opacity-100 sm:group-hover:translate-x-[120%]
                   transition-all duration-700
                 "
-              />
+                />
 
-              {/* Image flush top */}
-              {item.imageUrl ? (
-                <a
-                  href={item.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="block"
-                >
+                {/* Image flush top */}
+                {item.imageUrl ? (
                   <div className="overflow-hidden">
                     <img
                       src={item.imageUrl}
@@ -694,32 +691,32 @@ function Archive({ items }: { items: FeaturedItem[] }) {
                       "
                     />
                   </div>
-                </a>
-              ) : (
-                <div className="w-full h-28 sm:h-32 md:h-36 bg-slate-100/70" />
-              )}
+                ) : (
+                  <div className="w-full h-28 sm:h-32 md:h-36 bg-slate-100/70" />
+                )}
 
-              <div className="h-px bg-black/5" />
+                <div className="h-px bg-black/5" />
 
-              {/* Content */}
-              <div className="p-4 sm:p-5 flex flex-col flex-1">
-                <h3
-                  className="
-                    font-display text-lg sm:text-xl font-semibold text-gray-900 line-clamp-2
+                {/* Content */}
+                <div className="p-4 sm:p-5 flex flex-col flex-1">
+                  <h3
+                    className="
+                    font-display text-lg sm:text-xl font-semibold text-gray-900 
                     transition-colors duration-300
                     sm:group-hover:text-indigo-700
                   "
-                >
-                  {item.title}
-                </h3>
+                  >
+                    {item.title}
+                  </h3>
 
-                <div className="flex-1" />
+                  <div className="flex-1" />
 
-                <p className="font-sans text-xs sm:text-sm text-gray-500 mt-1">
-                  {item.date}
-                </p>
+                  <p className="font-sans text-xs sm:text-sm text-gray-500 mt-1">
+                    {item.date}
+                  </p>
+                </div>
               </div>
-            </div>
+            </a>
           </motion.article>
         ))}
 
