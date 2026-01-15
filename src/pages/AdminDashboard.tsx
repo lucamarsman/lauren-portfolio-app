@@ -43,6 +43,7 @@ export default function AdminDashboard() {
   const [form, setForm] = useState<Omit<ContentItem, "id">>(initialForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState("");
 
   // Subscribe to Firestore changes
   useEffect(() => {
@@ -132,7 +133,16 @@ export default function AdminDashboard() {
   const featuredCount = items.filter(
     (item) => item.section === "Featured" && item.showOnSite
   ).length;
-  //const sectionCount = new Set(items.map((item) => item.section)).size || 0;
+
+  const filteredItems = items.filter((item) => {
+    if (!search.trim()) return true;
+
+    const q = search.toLowerCase();
+    return (
+      item.title.toLowerCase().includes(q) ||
+      item.outlet.toLowerCase().includes(q)
+    );
+  });
 
   return (
     <main className="min-h-screen bg-gray-100 text-gray-900">
@@ -147,21 +157,6 @@ export default function AdminDashboard() {
               Add, edit, and organize the pieces that appear on the portfolio
               site.
             </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="hidden sm:flex flex-col items-end text-xs text-gray-500">
-              <span className="font-semibold text-gray-700">
-                Current profile
-              </span>
-              <span>Lauren Gibson · Portfolio</span>
-            </div>
-            <button
-              type="button"
-              className="px-3 py-1.5 rounded-full border border-gray-300 bg-white text-xs sm:text-sm hover:bg-gray-50"
-            >
-              Switch profile
-            </button>
           </div>
         </header>
 
@@ -188,7 +183,7 @@ export default function AdminDashboard() {
         </section>
 
         {/* Main layout: list + form */}
-        <section className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1.6fr)] items-start">
+        <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-start">
           {/* Left: content list */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             {/* Filters (UI only for now) */}
@@ -198,34 +193,17 @@ export default function AdminDashboard() {
                   Content entries
                 </span>
                 <span className="text-xs text-gray-500">
-                  ({items.length} items)
+                  ({filteredItems.length} items)
                 </span>
               </div>
               <div className="flex flex-wrap gap-2">
                 <input
                   type="text"
                   placeholder="Search by title or outlet..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
                   className="w-full sm:w-56 px-3 py-1.5 text-xs sm:text-sm rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  disabled
                 />
-                <select
-                  className="px-3 py-1.5 text-xs sm:text-sm rounded-lg border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  disabled
-                >
-                  <option>All types</option>
-                  <option>Article</option>
-                  <option>Radio Show</option>
-                  <option>Project</option>
-                </select>
-                <select
-                  className="px-3 py-1.5 text-xs sm:text-sm rounded-lg border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  disabled
-                >
-                  <option>All sections</option>
-                  <option>Featured</option>
-                  <option>Selected Work</option>
-                  <option>Archive</option>
-                </select>
               </div>
             </div>
 
@@ -252,7 +230,7 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((item, idx) => (
+                  {filteredItems.map((item, idx) => (
                     <tr
                       key={item.id}
                       className={`border-b border-gray-100 ${
@@ -319,7 +297,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Right: CRUD form */}
-          <div className="space-y-4">
+          <div className="space-y-4 lg:sticky lg:top-6 self-start">
             <form
               onSubmit={handleSubmit}
               className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-5"
