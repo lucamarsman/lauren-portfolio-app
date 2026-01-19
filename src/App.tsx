@@ -7,7 +7,9 @@ import { auth, googleProvider } from "./firebase";
 import HomePage from "./pages/HomePage.tsx";
 import AdminDashboard from "./pages/AdminDashboard.tsx";
 
-const ALLOWED_EMAIL = "lucamarsman01@gmail.com"; // your admin email
+const ALLOWED_EMAILS = ["laurengibson0202@gmail.com", "client@email.com"].map(
+  (e) => e.trim().toLowerCase(),
+);
 
 type AdminStatus = "loading" | "signedOut" | "authorized" | "forbidden";
 
@@ -25,10 +27,10 @@ function ProtectedAdminRoute() {
           return;
         }
 
-        const email = user.email ?? null;
-        setUserEmail(email);
+        const email = (user.email ?? "").trim().toLowerCase();
+        setUserEmail(email || null);
 
-        if (email && email === ALLOWED_EMAIL) {
+        if (email && ALLOWED_EMAILS.includes(email)) {
           setStatus("authorized");
         } else {
           setStatus("forbidden");
@@ -37,7 +39,7 @@ function ProtectedAdminRoute() {
       (error) => {
         console.error("[Auth] onAuthStateChanged error:", error);
         setStatus("signedOut");
-      }
+      },
     );
 
     return () => unsub();
